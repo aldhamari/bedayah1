@@ -3,3 +3,4 @@
 //   import { bulkImportSchema } from '@repo/shared/licenses/bulk-import.schema';
 
 export * from './licenses/bulk-import.schema';
+export * from './auth/auth.schema';
