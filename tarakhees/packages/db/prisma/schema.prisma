@@ -1,0 +1,350 @@
+// ══════════════════════════════════════════════════════════════
+//  وحدة التراخيص والتجديدات — packages/db/prisma/schema.prisma
+//  ملاحظة: أُضيف الحقل `code` إلى LicenseType (لم يكن في التصميم الأولي)
+//  لأن البذور تحتاج مفتاحًا ثابتًا للـ upsert بدل الاعتماد على الاسم العربي.
+// ══════════════════════════════════════════════════════════════
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ═══════════ التعدادات ═══════════
+
+enum LicenseStatus {
+  ACTIVE
+  EXPIRING_SOON
+  EXPIRED
+  UNDER_RENEWAL
+  CANCELLED
+}
+
+enum HolderType {
+  FACILITY
+  PERSON
+}
+
+enum CalendarType {
+  GREGORIAN
+  HIJRI
+}
+
+enum ReminderChannel {
+  WHATSAPP
+  EMAIL
+  SMS
+  IN_APP
+}
+
+enum DeliveryStatus {
+  SCHEDULED
+  SENT
+  FAILED
+  CANCELLED
+}
+
+enum RenewalRequestStatus {
+  NEW
+  ASSIGNED
+  IN_PROGRESS
+  DONE
+  CANCELLED
+}
+
+enum MemberRole {
+  OWNER
+  MANAGER
+  VIEWER
+}
+
+// ═══════════ المستأجر والمستخدمون ═══════════
+
+model Tenant {
+  id            String   @id @default(cuid())
+  name          String
+  crNumber      String?
+  timezone      String   @default("Asia/Riyadh")
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  members       Membership[]
+  facilities    Facility[]
+  persons       Person[]
+  licenses      License[]
+  licenseTypes  LicenseType[]
+  reminderRules ReminderRule[]
+  subscription  Subscription?
+
+  @@index([crNumber])
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  phone        String?
+  passwordHash String
+  fullName     String
+  createdAt    DateTime @default(now())
+
+  memberships  Membership[]
+}
+
+model Membership {
+  id        String     @id @default(cuid())
+  tenantId  String
+  userId    String
+  role      MemberRole @default(VIEWER)
+  createdAt DateTime   @default(now())
+
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, userId])
+  @@index([userId])
+}
+
+// ═══════════ حاملو التراخيص ═══════════
+
+model Facility {
+  id        String    @id @default(cuid())
+  tenantId  String
+  name      String
+  crNumber  String?
+  city      String?
+  address   String?
+  isActive  Boolean   @default(true)
+
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  licenses  License[]
+
+  @@index([tenantId])
+}
+
+model Person {
+  id           String    @id @default(cuid())
+  tenantId     String
+  fullName     String
+  nationalId   String?   // حساس — يُشفَّر قبل التخزين (انظر post-migration.sql)
+  nationality  String?
+  jobTitle     String?
+  isActive     Boolean   @default(true)
+
+  tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  licenses     License[]
+
+  @@index([tenantId])
+}
+
+// ═══════════ كتالوج أنواع التراخيص ═══════════
+
+model LicenseType {
+  id                 String       @id @default(cuid())
+  code               String       @unique  // للأنواع العامة: "CR". للمخصصة: "<tenantId>_<slug>"
+  tenantId           String?               // null = نوع عام يظهر لكل المستأجرين
+  nameAr             String
+  nameEn             String?
+  authority          String?
+  holderType         HolderType
+  defaultDurationMo  Int?
+  defaultCalendar    CalendarType @default(GREGORIAN)
+  typicalPenaltyNote String?
+  renewalUrl         String?
+  isActive           Boolean      @default(true)
+  sortOrder          Int          @default(0)
+
+  tenant             Tenant?      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  licenses           License[]
+
+  @@index([tenantId])
+  @@index([holderType, sortOrder])
+}
+
+// ═══════════ الترخيص وفتراته ═══════════
+
+model License {
+  id            String        @id @default(cuid())
+  tenantId      String
+  licenseTypeId String
+  facilityId    String?
+  personId      String?
+
+  number        String?
+  label         String?
+  notes         String?
+  isArchived    Boolean       @default(false)
+
+  status        LicenseStatus @default(ACTIVE)
+  currentExpiry DateTime?
+
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  licenseType   LicenseType   @relation(fields: [licenseTypeId], references: [id])
+  facility      Facility?     @relation(fields: [facilityId], references: [id])
+  person        Person?       @relation(fields: [personId], references: [id])
+  periods       LicensePeriod[]
+  renewalReqs   RenewalRequest[]
+
+  @@index([tenantId, status])
+  @@index([tenantId, currentExpiry])
+  @@index([facilityId])
+  @@index([personId])
+}
+
+model LicensePeriod {
+  id             String       @id @default(cuid())
+  tenantId       String
+  licenseId      String
+
+  issueDate      DateTime?
+  expiryDate     DateTime
+  expiryHijri    String?
+  sourceCalendar CalendarType @default(GREGORIAN)
+
+  cost           Decimal?     @db.Decimal(12, 2)
+  isCurrent      Boolean      @default(true)
+  closedAt       DateTime?
+
+  createdAt      DateTime     @default(now())
+
+  license        License      @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+  documents      Document[]
+  reminders      ReminderJob[]
+
+  @@index([tenantId, expiryDate])
+  @@index([licenseId, isCurrent])
+}
+
+model Document {
+  id         String        @id @default(cuid())
+  tenantId   String
+  periodId   String
+  fileName   String
+  storageKey String
+  mimeType   String
+  sizeBytes  Int
+  uploadedBy String?
+  createdAt  DateTime      @default(now())
+
+  period     LicensePeriod @relation(fields: [periodId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([periodId])
+}
+
+// ═══════════ محرك التنبيهات ═══════════
+
+model ReminderRule {
+  id         String          @id @default(cuid())
+  tenantId   String
+  offsetDays Int
+  channel    ReminderChannel
+  isActive   Boolean         @default(true)
+
+  tenant     Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, offsetDays, channel])
+}
+
+model ReminderJob {
+  id          String            @id @default(cuid())
+  tenantId    String
+  periodId    String
+  offsetDays  Int
+  dueOn       DateTime
+  status      DeliveryStatus    @default(SCHEDULED)
+  createdAt   DateTime          @default(now())
+
+  period      LicensePeriod     @relation(fields: [periodId], references: [id], onDelete: Cascade)
+  deliveries  NotificationLog[]
+
+  @@unique([periodId, offsetDays])
+  @@index([status, dueOn])
+}
+
+model NotificationLog {
+  id           String          @id @default(cuid())
+  tenantId     String
+  reminderId   String
+  channel      ReminderChannel
+  recipient    String
+  bodySnapshot String
+  status       DeliveryStatus
+  providerRef  String?
+  errorText    String?
+  sentAt       DateTime        @default(now())
+
+  reminder     ReminderJob     @relation(fields: [reminderId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, sentAt])
+  @@index([reminderId])
+}
+
+// ═══════════ التجديد كمصدر عمولة ═══════════
+
+model ServiceProvider {
+  id            String           @id @default(cuid())
+  name          String
+  phone         String?
+  specialties   String[]
+  commissionPct Decimal?         @db.Decimal(5, 2)
+  isActive      Boolean          @default(true)
+
+  requests      RenewalRequest[]
+}
+
+model RenewalRequest {
+  id           String               @id @default(cuid())
+  tenantId     String
+  licenseId    String
+  providerId   String?
+  status       RenewalRequestStatus @default(NEW)
+  quotedAmount Decimal?             @db.Decimal(12, 2)
+  commission   Decimal?             @db.Decimal(12, 2)
+  notes        String?
+  createdAt    DateTime             @default(now())
+  completedAt  DateTime?
+
+  license      License              @relation(fields: [licenseId], references: [id])
+  provider     ServiceProvider?     @relation(fields: [providerId], references: [id])
+
+  @@index([tenantId, status])
+  @@index([licenseId])
+}
+
+// ═══════════ الاشتراك ═══════════
+
+model Subscription {
+  id           String   @id @default(cuid())
+  tenantId     String   @unique
+  plan         String
+  licenseQuota Int      @default(25)
+  startsOn     DateTime
+  endsOn       DateTime
+  amount       Decimal  @db.Decimal(12, 2)
+  isActive     Boolean  @default(true)
+
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+// ═══════════ سجل التدقيق ═══════════
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  tenantId   String
+  userId     String?
+  action     String
+  entityType String
+  entityId   String
+  diff       Json?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  @@index([tenantId, createdAt])
+  @@index([entityType, entityId])
+}

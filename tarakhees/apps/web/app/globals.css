@@ -1,0 +1,11 @@
+@import "tailwindcss";
+
+/* الواجهة عربية RTL بالكامل — قاعدة ثابتة رقم ٣ في CLAUDE.md */
+html {
+  direction: rtl;
+}
+
+body {
+  font-family: system-ui, "Segoe UI", Tahoma, "Noto Sans Arabic", sans-serif;
+  text-align: right;
+}

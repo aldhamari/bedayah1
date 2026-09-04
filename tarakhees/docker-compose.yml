@@ -1,0 +1,40 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: tarakhees-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-tarakhees}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tarakhees}
+      POSTGRES_DB: ${POSTGRES_DB:-tarakhees}
+      TZ: Asia/Riyadh
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-tarakhees} -d ${POSTGRES_DB:-tarakhees}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: tarakhees-redis
+    restart: unless-stopped
+    # appendonly يحفظ الطابور على القرص: إعادة تشغيل Redis
+    # لا تُضيّع تنبيهات في انتظار الإرسال
+    command: redis-server --appendonly yes
+    ports:
+      - '${REDIS_PORT:-6379}:6379'
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres-data:
+  redis-data:

@@ -1,0 +1,24 @@
+{
+  "name": "@repo/db",
+  "version": "0.1.0",
+  "private": true,
+  "description": "مخطط Prisma والترحيلات والبذور",
+  "scripts": {
+    "generate": "prisma generate",
+    "migrate": "dotenv -e ../../.env -- prisma migrate dev",
+    "migrate:deploy": "dotenv -e ../../.env -- prisma migrate deploy",
+    "seed": "dotenv -e ../../.env -- tsx prisma/seeds/seed-license-types.ts",
+    "studio": "dotenv -e ../../.env -- prisma studio",
+    "format": "prisma format",
+    "validate": "dotenv -e ../../.env -- prisma validate"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.16.1"
+  },
+  "devDependencies": {
+    "dotenv-cli": "^10.0.0",
+    "prisma": "^6.16.1",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  }
+}

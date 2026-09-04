@@ -1,0 +1,35 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "declaration": true,
+    "removeComments": false,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "target": "ES2023",
+    "lib": ["ES2023"],
+    "sourceMap": true,
+    "outDir": "./dist",
+    "baseUrl": "./",
+    // أنواع الحزمة المشتركة تُقرأ من مخرجات البناء (.d.ts) لا من المصدر،
+    // حتى لا يخرج تشغيل nest build عن rootDir. التشغيل الفعلي يمرّ عبر
+    // حقل "exports" في package.json الخاص بـ @repo/shared.
+    // ⇦ ابنِ packages/shared قبل بناء الـ API (سكربت build في الجذر يفعل ذلك).
+    "paths": {
+      "@repo/shared": ["../../packages/shared/dist/index.d.ts"],
+      "@repo/shared/*": ["../../packages/shared/dist/*"]
+    },
+    "incremental": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "strictNullChecks": true,
+    "strictPropertyInitialization": false,
+    "noImplicitAny": true,
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "test"]
+}
