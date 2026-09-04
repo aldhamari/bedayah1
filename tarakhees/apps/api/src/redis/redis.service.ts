@@ -5,7 +5,7 @@
 //  اتصاله بنفسه من نفس متغيرات البيئة في reminders.module.ts.
 // ══════════════════════════════════════════════════════════════
 
-import { Injectable, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 
@@ -13,13 +13,24 @@ import Redis from 'ioredis';
 export class RedisService implements OnModuleDestroy {
   readonly client: Redis;
 
+  private readonly logger = new Logger(RedisService.name);
+
   constructor(config: ConfigService) {
     this.client = new Redis({
       host: config.get('REDIS_HOST') ?? 'localhost',
       port: Number(config.get('REDIS_PORT') ?? 6379),
       password: config.get('REDIS_PASSWORD') || undefined,
-      maxRetriesPerRequest: null,
+
+      // ★ ليس null عمدًا. BullMQ يفرض null على اتصاله هو (ويديره بنفسه)،
+      //   لكن هذا العميل يخدم الجلسات والدعوات في مسار الطلب: null هنا
+      //   يعني أن محاولة دخول أثناء توقف Redis تتعلّق إلى الأبد بدل أن
+      //   تُرجع خطأً. ثلاث محاولات ثم فشل صريح أفضل من طلب لا ينتهي.
+      maxRetriesPerRequest: 3,
+      connectTimeout: 5_000,
+      enableOfflineQueue: false,
     });
+
+    this.client.on('error', (err) => this.logger.error(`خطأ اتصال Redis: ${err.message}`));
   }
 
   /**

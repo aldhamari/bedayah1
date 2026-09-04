@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "jsx": "react-jsx",
+    "noEmit": false,
+    "types": ["jest", "node"]
+  },
+  "include": ["lib/**/*.ts", "jest.config.js"]
+}

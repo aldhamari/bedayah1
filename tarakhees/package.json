@@ -11,13 +11,14 @@
     "dev:api": "npm run start:dev --workspace=apps/api",
     "dev:web": "npm run dev --workspace=apps/web",
     "build": "npm run build --workspace=packages/shared && npm run build --workspace=apps/api && npm run build --workspace=apps/web",
-    "test": "npm run test --workspace=apps/api",
+    "test": "npm run test --workspace=apps/web && npm run test --workspace=apps/api",
     "prisma:generate": "npm run generate --workspace=packages/db",
     "prisma:migrate": "npm run migrate --workspace=packages/db",
     "prisma:migrate:deploy": "npm run migrate:deploy --workspace=packages/db",
     "prisma:seed": "npm run seed --workspace=packages/db",
     "prisma:studio": "npm run studio --workspace=packages/db",
-    "lint": "npm run lint --workspace=apps/api && npm run lint --workspace=apps/web"
+    "lint": "npm run lint --workspace=apps/api && npm run lint --workspace=apps/web",
+    "verify": "npm run verify:isolation --workspace=apps/api && npm run verify:api --workspace=apps/api"
   },
   "engines": {
     "node": ">=20"
