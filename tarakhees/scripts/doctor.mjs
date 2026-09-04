@@ -24,9 +24,13 @@ const add = (ok, label, detail = '', fix = '') => {
   if (ok === false) blocking++;
 };
 
+// على ويندوز `npm` ملف npm.cmd لا تنفيذي، و spawnSync بلا shell لا يجده
+// فيرجع ENOENT ويبدو الأمر كأنه غير مثبَّت. shell:true يحلّها هناك وحدها.
+const isWindows = process.platform === 'win32';
+
 const run = (cmd, args) => {
   try {
-    const r = spawnSync(cmd, args, { encoding: 'utf8', timeout: 20_000 });
+    const r = spawnSync(cmd, args, { encoding: 'utf8', timeout: 20_000, shell: isWindows });
     return r.status === 0 ? (r.stdout || '').trim() : null;
   } catch {
     return null;
