@@ -11,9 +11,9 @@
     "lint": "eslint \"src/**/*.ts\"",
     "test": "jest",
     "test:watch": "jest --watch",
-    "verify:isolation": "dotenv -e ../../.env -- ts-node --transpile-only -P tsconfig.json test/verify-tenant-isolation.ts",
+    "verify:isolation": "dotenv -e ../../.env -- ts-node -P tsconfig.json test/verify-tenant-isolation.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "verify:api": "dotenv -e ../../.env -- ts-node --transpile-only -P tsconfig.json test/verify-api.ts"
+    "verify:api": "dotenv -e ../../.env -- ts-node -P tsconfig.json test/verify-api.ts"
   },
   "dependencies": {
     "@nestjs/bullmq": "^11.0.3",

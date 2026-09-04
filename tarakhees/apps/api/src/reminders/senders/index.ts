@@ -72,7 +72,14 @@ export class WhatsAppSender implements NotificationSender {
       }),
     });
 
-    const data = await res.json().catch(() => ({}));
+    // النوع مُصرَّح لأن fetch يُرجع Promise<unknown> في @types/node الحديثة،
+    // فيصير الناتج {} ولا تُقبل قراءة أي حقل منه. الحقول اختيارية كلها:
+    // ردّ المزوّد ليس مضمونًا، و?. يتكفّل بغيابها.
+    type WhatsAppResponse = {
+      error?: { message?: string };
+      messages?: { id?: string }[];
+    };
+    const data = (await res.json().catch(() => ({}))) as WhatsAppResponse;
 
     if (!res.ok) {
       const msg = data?.error?.message ?? `HTTP ${res.status}`;
@@ -148,7 +155,8 @@ export class SmsSender implements NotificationSender {
     });
 
     if (!res.ok) throw new Error(`فشل مزوّد الرسائل: HTTP ${res.status}`);
-    const data = await res.json().catch(() => ({}));
+    // نفس سبب التصريح في WhatsAppSender أعلاه
+    const data = (await res.json().catch(() => ({}))) as { messageId?: string };
     return { providerRef: data?.messageId };
   }
 }

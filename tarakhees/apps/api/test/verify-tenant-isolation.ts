@@ -311,7 +311,9 @@ async function main() {
           ...(init.headers ?? {}),
         },
       });
-      return { status: res.status, body: await res.json().catch(() => null) };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // ردود الاختبار تُفحص بالتأكيدات لا بالأنواع، و res.json() يعطي unknown
+      return { status: res.status, body: (await res.json().catch(() => null)) as any };
     };
 
     try {

@@ -52,7 +52,8 @@ async function main() {
         ...(init.headers ?? {}),
       },
     });
-    return { status: res.status, body: await res.json().catch(() => null) };
+    // ردود الاختبار تُفحص بالتأكيدات لا بالأنواع، و res.json() يعطي unknown
+    return { status: res.status, body: (await res.json().catch(() => null)) as any };
   };
   const post = (p: string, t: string | undefined, b: unknown) =>
     call(p, t, { method: 'POST', body: JSON.stringify(b) });
