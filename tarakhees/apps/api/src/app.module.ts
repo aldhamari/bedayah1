@@ -1,14 +1,12 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { AdminController } from './admin/admin.controller';
 import { AuthModule } from './auth/auth.module';
+import { LicensesModule } from './licenses/licenses.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './redis/redis.module';
 import { RemindersModule } from './reminders/reminders.module';
 import { TenantContextMiddleware } from './tenancy/tenant-context.middleware';
-
-// الوحدات القادمة (لا تُضف قبل بنائها في مهامها):
-//   LicensesModule   ← المهمة ٤ (وفيها LicensesBulkController الموجود)
-//   DashboardModule  ← المهمة ٤
 
 @Module({
   imports: [
@@ -17,7 +15,11 @@ import { TenantContextMiddleware } from './tenancy/tenant-context.middleware';
     RedisModule,
     AuthModule,
     RemindersModule,
+    LicensesModule,
   ],
+  // AdminController هنا لا في وحدة مستقلة: يحتاج ReminderSchedulerService
+  // الذي تُصدّره RemindersModule، ولا يستحق وحدة كاملة لمسار واحد.
+  controllers: [AdminController],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

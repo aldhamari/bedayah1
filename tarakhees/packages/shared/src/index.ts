@@ -4,3 +4,4 @@
 
 export * from './licenses/bulk-import.schema';
 export * from './auth/auth.schema';
+export * from './licenses/license.schema';
