@@ -119,11 +119,11 @@ const redisPort = Number(env.REDIS_PORT || 6379);
 
 const pgUp = await portOpen(pgPort);
 add(pgUp, `PostgreSQL يستمع على ${pgPort}`, pgUp ? '' : 'لا اتصال',
-  'npm run db:up   (أو شغّل Postgres محليًا)');
+  'npm run db:up   — أو ثبّت PostgreSQL مباشرة (راجع install-windows-no-docker.md)');
 
 const redisUp = await portOpen(redisPort);
 add(redisUp, `Redis يستمع على ${redisPort}`, redisUp ? '' : 'لا اتصال',
-  'npm run db:up   (أو شغّل Redis محليًا)');
+  'npm run db:up   — أو ثبّت Memurai مباشرة (راجع install-windows-no-docker.md)');
 
 // ─────────────── ٥. قاعدة البيانات ───────────────
 

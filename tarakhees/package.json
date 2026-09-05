@@ -10,6 +10,7 @@
   "scripts": {
     "env:init": "node scripts/init-env.mjs",
     "setup": "npm run env:init && npm run db:up && npm run prisma:migrate && npm run prisma:seed",
+    "setup:local": "npm run env:init && npm run prisma:migrate && npm run prisma:seed",
     "doctor": "node scripts/doctor.mjs",
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",
